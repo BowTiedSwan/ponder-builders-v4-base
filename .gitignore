@@ -1,0 +1,90 @@
+# Dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.pnpm-store/
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+.env.production
+.env.development
+
+# Ponder specific
+.ponder/
+.cache/
+*.db
+*.db-journal
+*.db-shm
+*.db-wal
+
+# Generated files (if regenerated on build)
+# Note: Keep generated/schema.graphql if it's meant to be committed
+# Uncomment if you don't want to commit generated files:
+# generated/
+
+# Build outputs
+dist/
+build/
+*.tsbuildinfo
+
+# TypeScript
+*.tsbuildinfo
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+*.sublime-project
+*.sublime-workspace
+
+# OS files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+Desktop.ini
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Testing
+coverage/
+.nyc_output/
+*.lcov
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+.cache/
+
+# Docker
+.dockerignore
+
+# Database
+*.sqlite
+*.sqlite3
+*.db
+pgdata/
+postgres-data/
+
+# Misc
+.vercel
+.netlify
+
