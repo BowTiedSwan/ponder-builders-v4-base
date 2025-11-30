@@ -1,0 +1,5 @@
+[deploy]
+startCommand = "pnpm start --schema ${RAILWAY_DEPLOYMENT_ID:-builders_v4_prod} --views-schema builders_v4"
+healthcheckPath = "/ready"
+healthcheckTimeout = 3600
+
