@@ -20,7 +20,10 @@ Ponder-based indexer for Builders Protocol v4 contracts deployed on Base Sepolia
 ## Documentation
 
 For detailed setup instructions, configuration, and troubleshooting, see:
-- **[Setup Guide](../../docs/builders-v4-base-sepolia-setup.md)**
+- **[Environment Variables](./ENV_VARIABLES.md)** - All environment variables and configuration
+- **[Railway Deployment Guide](./RAILWAY_DEPLOYMENT.md)** - Production deployment on Railway
+- **[Shared Database Setup](./SHARED_DATABASE_SETUP.md)** - Using one database for multiple indexers
+- **[GraphQL Queries](./GRAPHQL_QUERIES.md)** - Example queries and API usage
 
 ## Configuration
 

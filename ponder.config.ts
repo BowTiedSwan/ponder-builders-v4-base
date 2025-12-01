@@ -5,13 +5,46 @@ import { loadBalance, rateLimit } from "ponder";
 // Import v4 contract ABIs
 import { BuildersV4Abi, RewardPoolV4Abi, FeeConfigAbi, BuildersTreasuryV2Abi, ERC20Abi } from "./abis/index.js";
 
+// Detect production environment
+const isProduction = 
+  process.env.NODE_ENV === "production" ||
+  process.env.RAILWAY_ENVIRONMENT !== undefined ||
+  process.env.RAILWAY_ENVIRONMENT_NAME === "production" ||
+  process.env.VERCEL_ENV === "production" ||
+  process.env.FLY_APP_NAME !== undefined;
+
+// Validate database configuration
+const databaseUrl = process.env.DATABASE_URL;
+const usingPostgres = !!databaseUrl;
+const usingPGlite = !databaseUrl;
+
+if (isProduction && usingPGlite) {
+  console.error("⚠️  CRITICAL WARNING: Running in production without DATABASE_URL!");
+  console.error("⚠️  PGlite (ephemeral file-based database) will be used, which will cause DATA LOSS on restart!");
+  console.error("⚠️  Set DATABASE_URL environment variable to use PostgreSQL for persistent storage.");
+  console.error("⚠️  This is a production deployment - data will NOT persist across restarts!");
+  throw new Error(
+    "DATABASE_URL is required in production. PGlite is ephemeral and will cause data loss. " +
+    "Please set DATABASE_URL to a PostgreSQL connection string."
+  );
+}
+
+if (usingPostgres) {
+  console.log("✅ Using PostgreSQL database (persistent storage)");
+  console.log(`   Connection: ${databaseUrl?.replace(/:[^:@]+@/, ":****@")}`); // Mask password
+} else {
+  console.warn("⚠️  Using PGlite database (ephemeral file-based storage)");
+  console.warn("⚠️  This is suitable for local development only.");
+  console.warn("⚠️  Data will be lost on restart. Use DATABASE_URL for production.");
+}
+
 export default createConfig({
   // Database configuration: Use Postgres if DATABASE_URL is provided, otherwise use PGlite for local dev
-  ...(process.env.DATABASE_URL
+  ...(databaseUrl
     ? {
         database: {
           kind: "postgres",
-          connectionString: process.env.DATABASE_URL,
+          connectionString: databaseUrl,
           poolConfig: {
             max: 30,
           },
