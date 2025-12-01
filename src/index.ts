@@ -152,9 +152,10 @@ ponder.on("BuildersV4:UserDeposited", async ({ event, context }: any) => {
   const stakedDelta = deposited - oldStaked;
   const isNewUser = !existingUser;
 
-  // Upsert user record - use conditional insert/update to avoid cloning issues with onConflictDoUpdate
+  // Upsert user record - avoid onConflictDoUpdate to prevent cloning issues
+  // Use separate insert/update logic instead
   if (existingUser) {
-    // Update existing user
+    // Update existing user - preserve claimed amount
     await context.db
       .update(buildersUser, { id: userId })
       .set({
@@ -165,38 +166,19 @@ ponder.on("BuildersV4:UserDeposited", async ({ event, context }: any) => {
         virtualDeposited: unusedStorage2_V4Update,
       });
   } else {
-    // Insert new user - wrap in try-catch to handle potential race conditions
-    try {
-      await context.db.insert(buildersUser).values({
-        id: userId,
-        buildersProjectId: subnetId,
-        address: user,
-        staked: deposited,
-        claimed: 0n,
-        lastStake: BigInt(blockTimestamp),
-        claimLockEnd: BigInt(lastDeposit),
-        lastDeposit: lastDeposit,
-        virtualDeposited: unusedStorage2_V4Update,
-        chainId: context.chain.id,
-      });
-    } catch (error: any) {
-      // If insert fails due to conflict (race condition), update instead
-      // This can happen if the user was created between our check and insert
-      if (error?.code === '23505' || error?.message?.includes('unique constraint') || error?.message?.includes('duplicate')) {
-        await context.db
-          .update(buildersUser, { id: userId })
-          .set({
-            staked: deposited,
-            lastStake: BigInt(blockTimestamp),
-            claimLockEnd: BigInt(lastDeposit),
-            lastDeposit: lastDeposit,
-            virtualDeposited: unusedStorage2_V4Update,
-          });
-      } else {
-        // Re-throw if it's a different error
-        throw error;
-      }
-    }
+    // Insert new user
+    await context.db.insert(buildersUser).values({
+      id: userId,
+      buildersProjectId: subnetId,
+      address: user,
+      staked: deposited,
+      claimed: 0n,
+      lastStake: BigInt(blockTimestamp),
+      claimLockEnd: BigInt(lastDeposit),
+      lastDeposit: lastDeposit,
+      virtualDeposited: unusedStorage2_V4Update,
+      chainId: context.chain.id,
+    });
   }
 
   // Update project totals incrementally
