@@ -1,6 +1,6 @@
-# Builders v4 Base Sepolia Indexer
+# Builders v4 Base Mainnet Indexer
 
-Ponder-based indexer for Builders Protocol v4 contracts deployed on Base Sepolia testnet.
+Ponder-based indexer for Builders Protocol v4 contracts deployed on Base Mainnet.
 
 ## Quick Start
 
