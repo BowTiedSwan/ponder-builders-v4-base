@@ -10,3 +10,11 @@ cmds = []
 [start]
 cmd = "pnpm start --schema ${RAILWAY_DEPLOYMENT_ID:-builders_v4_prod} --views-schema builders_v4"
 
+
+
+
+
+
+
+
+

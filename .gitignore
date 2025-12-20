@@ -12,6 +12,9 @@ pnpm-debug.log*
 .env.*.local
 .env.production
 .env.development
+.env.test
+.env.*.example
+!env.*.example
 
 # Ponder specific
 .ponder/
@@ -37,10 +40,10 @@ build/
 # IDE and editor files
 .vscode/
 .idea/
+.cursor/
 *.swp
 *.swo
 *~
-.DS_Store
 *.sublime-project
 *.sublime-workspace
 
@@ -72,7 +75,6 @@ coverage/
 tmp/
 temp/
 *.tmp
-.cache/
 
 # Docker
 .dockerignore
@@ -84,7 +86,12 @@ temp/
 pgdata/
 postgres-data/
 
-# Misc
+# Deployment platforms
 .vercel
 .netlify
+.railway
 
+# Misc
+*.pid
+*.seed
+*.pid.lock

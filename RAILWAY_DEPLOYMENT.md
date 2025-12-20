@@ -27,11 +27,16 @@ This guide covers deploying the Builders V4 indexer to Railway with proper datab
 
 In your Railway service, go to **"Variables"** tab and set:
 
-#### Required Variables
+#### Required Variables (Set on Service)
 
 ```bash
 # Database Configuration (CRITICAL)
-DATABASE_URL=${{Postgres.DATABASE_URL}}  # Link to PostgreSQL service, or set manually
+DATABASE_URL=${{Postgres.DATABASE_URL}}  # Link to PostgreSQL service (Option A)
+# OR
+DATABASE_URL=${{DATABASE_URL}}  # Reference shared variable (Option B)
+# OR  
+DATABASE_URL=postgresql://...  # Direct value (Option C)
+
 DATABASE_SCHEMA=builders_v4_base_sepolia  # Unique schema name per deployment
 
 # RPC Configuration
@@ -228,6 +233,11 @@ If no tables exist in your schema:
 ### Issue: "DATABASE_URL is required in production" Error
 
 **Symptoms**: Application fails to start with error about DATABASE_URL
+
+**Common Causes**:
+1. `DATABASE_URL` is set as **shared variable** but not referenced on the service
+2. Variable name is misspelled or case-sensitive mismatch
+3. PostgreSQL service is not linked to the indexer service
 
 **Solution**:
 1. Verify `DATABASE_URL` is set in Railway Variables

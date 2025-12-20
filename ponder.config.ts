@@ -52,22 +52,22 @@ export default createConfig({
       }
     : {}),
   chains: {
-    baseSepolia: {
-      id: 84532,
+    base: {
+      id: 8453,
       rpc: loadBalance([
-        http(process.env.PONDER_RPC_URL_84532 || "https://sepolia.base.org"),
-        rateLimit(http("https://base-sepolia-rpc.publicnode.com"), { 
+        http(process.env.PONDER_RPC_URL_8453 || "https://mainnet.base.org"),
+        rateLimit(http("https://base-rpc.publicnode.com"), { 
           requestsPerSecond: 10 
         }),
       ]),
     },
   },
   contracts: {
-    // Builders v4 staking contract - deployed on Base Sepolia
+    // Builders v4 staking contract - deployed on Base Mainnet
     BuildersV4: {
       abi: BuildersV4Abi as Abi,
-      chain: "baseSepolia",
-      address: (process.env.BUILDERS_V4_CONTRACT_ADDRESS || "0x6C3401D71CEd4b4fEFD1033EA5F83e9B3E7e4381") as `0x${string}`,
+      chain: "base",
+      address: (process.env.BUILDERS_V4_CONTRACT_ADDRESS || "0x42BB446eAE6dca7723a9eBdb81EA88aFe77eF4B9") as `0x${string}`,
       startBlock: Number(process.env.BUILDERS_V4_START_BLOCK || "29016947"),
       includeTransactionReceipts: true,
     },
@@ -75,35 +75,35 @@ export default createConfig({
     // Reward Pool v4 - handles reward distribution
     RewardPoolV4: {
       abi: RewardPoolV4Abi as Abi,
-      chain: "baseSepolia",
-      address: (process.env.REWARD_POOL_V4_CONTRACT_ADDRESS || "0x0000000000000000000000000000000000000000") as `0x${string}`,
-      startBlock: Number(process.env.REWARD_POOL_V4_START_BLOCK || "0"),
+      chain: "base",
+      address: (process.env.REWARD_POOL_V4_CONTRACT_ADDRESS || "0xDC99a8596e395E52aba2BD08C623E1e428Dc3980") as `0x${string}`,
+      startBlock: Number(process.env.REWARD_POOL_V4_START_BLOCK || "38980285"),
     },
 
     // Builders Treasury V2 - handles reward distribution to users
     BuildersTreasuryV2: {
       abi: BuildersTreasuryV2Abi as Abi,
-      chain: "baseSepolia",
-      address: (process.env.BUILDERS_TREASURY_V2_CONTRACT_ADDRESS || "0x0000000000000000000000000000000000000000") as `0x${string}`,
-      startBlock: Number(process.env.BUILDERS_TREASURY_V2_START_BLOCK || "0"),
+      chain: "base",
+      address: (process.env.BUILDERS_TREASURY_V2_CONTRACT_ADDRESS || "0x9eba628581896ce086cb8f1A513ea6097A8FC561") as `0x${string}`,
+      startBlock: Number(process.env.BUILDERS_TREASURY_V2_START_BLOCK || "24381805"),
     },
 
     // Fee Config - proxy contract for fee configuration
     FeeConfig: {
       abi: FeeConfigAbi as Abi,
-      chain: "baseSepolia",
-      address: (process.env.FEE_CONFIG_CONTRACT_ADDRESS || "0x0000000000000000000000000000000000000000") as `0x${string}`,
-      startBlock: Number(process.env.FEE_CONFIG_START_BLOCK || "0"),
+      chain: "base",
+      address: (process.env.FEE_CONFIG_CONTRACT_ADDRESS || "0x845FBB4B3e2207BF03087b8B94D2430AB11088eE") as `0x${string}`,
+      startBlock: Number(process.env.FEE_CONFIG_START_BLOCK || "24381815"),
     },
 
     // MOR Token contract - for tracking transfers and approvals
     MorToken: {
       abi: ERC20Abi,
-      chain: "baseSepolia",
-      // TODO: Update with actual MOR token address on Base Sepolia
-      address: (process.env.MOR_TOKEN_ADDRESS_BASE_SEPOLIA || "0x5C80Ddd187054E1E4aBBfFCD750498e81d34FfA3") as `0x${string}`,
+      chain: "base",
+      // TODO: Update with actual MOR token address on Base Mainnet
+      address: (process.env.MOR_TOKEN_ADDRESS_BASE_MAINNET || "0x7431ADA8A591C955A994A21710752ef9b882b8e3") as `0x${string}`,
       // TODO: Update with actual deployment block number
-      startBlock: Number(process.env.MOR_TOKEN_START_BLOCK_BASE_SEPOLIA || "24869176"),
+      startBlock: Number(process.env.MOR_TOKEN_START_BLOCK_BASE_MAINNET || "24869176"),
     },
   },
 });
