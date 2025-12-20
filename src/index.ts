@@ -45,12 +45,13 @@ ponder.on("BuildersV4:SubnetCreated", async ({ event, context }: any) => {
   // Check if project already exists (can happen if SubnetMetadataEdited was processed first)
   let existingProject = await context.db.find(buildersProject, { id: subnetId });
 
-  // Read metadata from contract (metadata is set during creation but not emitted in event)
+  // Read metadata from contract at the event block (metadata is set during creation but not emitted in event)
   const metadata = await context.client.readContract({
     address: event.log.address,
     abi: context.contracts.BuildersV4.abi,
     functionName: "subnetsMetadata",
     args: [subnetId],
+    blockNumber: event.block.number, // Read at the event block for consistency
   });
 
   const [slug, description, website, image] = metadata;
@@ -162,24 +163,52 @@ ponder.on("BuildersV4:UserDeposited", async ({ event, context }: any) => {
     try {
       // Read subnet data from contract at the event block
       // Use blockNumber to read state at the time of the event
-      const subnetData = await context.client.readContract({
-        address: event.log.address,
-        abi: context.contracts.BuildersV4.abi,
-        functionName: "subnets",
-        args: [subnetId],
-        blockNumber: event.block.number, // Read at the event block, not current block
-      });
+      // If reading at event block fails, try reading at latest block as fallback
+      let subnetData;
+      try {
+        subnetData = await context.client.readContract({
+          address: event.log.address,
+          abi: context.contracts.BuildersV4.abi,
+          functionName: "subnets",
+          args: [subnetId],
+          blockNumber: event.block.number, // Read at the event block, not current block
+        });
+      } catch (blockError: any) {
+        // If reading at event block fails (RPC might not support historical queries),
+        // try reading at latest block as fallback
+        console.warn(`Failed to read subnet at event block ${event.block.number}, trying latest block: ${blockError.message}`);
+        subnetData = await context.client.readContract({
+          address: event.log.address,
+          abi: context.contracts.BuildersV4.abi,
+          functionName: "subnets",
+          args: [subnetId],
+          // No blockNumber = latest block
+        });
+      }
 
       const [name, admin, unusedStorage1_V4Update_subnet, withdrawLockPeriodAfterDeposit, unusedStorage2_V4Update_subnet, minimalDeposit, claimAdmin] = subnetData;
 
-      // Read metadata from contract at the event block
-      const metadata = await context.client.readContract({
-        address: event.log.address,
-        abi: context.contracts.BuildersV4.abi,
-        functionName: "subnetsMetadata",
-        args: [subnetId],
-        blockNumber: event.block.number, // Read at the event block, not current block
-      });
+      // Read metadata from contract at the event block (or latest as fallback)
+      let metadata;
+      try {
+        metadata = await context.client.readContract({
+          address: event.log.address,
+          abi: context.contracts.BuildersV4.abi,
+          functionName: "subnetsMetadata",
+          args: [subnetId],
+          blockNumber: event.block.number, // Read at the event block, not current block
+        });
+      } catch (blockError: any) {
+        // Fallback to latest block if historical read fails
+        console.warn(`Failed to read metadata at event block ${event.block.number}, trying latest block: ${blockError.message}`);
+        metadata = await context.client.readContract({
+          address: event.log.address,
+          abi: context.contracts.BuildersV4.abi,
+          functionName: "subnetsMetadata",
+          args: [subnetId],
+          // No blockNumber = latest block
+        });
+      }
 
       const [slug, description, website, image] = metadata;
 
@@ -326,24 +355,52 @@ ponder.on("BuildersV4:UserWithdrawn", async ({ event, context }: any) => {
     // If the subnet doesn't exist in the contract (reverts), skip this event
     try {
       // Read subnet data from contract at the event block
-      const subnetData = await context.client.readContract({
-        address: event.log.address,
-        abi: context.contracts.BuildersV4.abi,
-        functionName: "subnets",
-        args: [subnetId],
-        blockNumber: event.block.number, // Read at the event block, not current block
-      });
+      // If reading at event block fails, try reading at latest block as fallback
+      let subnetData;
+      try {
+        subnetData = await context.client.readContract({
+          address: event.log.address,
+          abi: context.contracts.BuildersV4.abi,
+          functionName: "subnets",
+          args: [subnetId],
+          blockNumber: event.block.number, // Read at the event block, not current block
+        });
+      } catch (blockError: any) {
+        // If reading at event block fails (RPC might not support historical queries),
+        // try reading at latest block as fallback
+        console.warn(`Failed to read subnet at event block ${event.block.number}, trying latest block: ${blockError.message}`);
+        subnetData = await context.client.readContract({
+          address: event.log.address,
+          abi: context.contracts.BuildersV4.abi,
+          functionName: "subnets",
+          args: [subnetId],
+          // No blockNumber = latest block
+        });
+      }
 
       const [name, admin, unusedStorage1_V4Update_subnet, withdrawLockPeriodAfterDeposit, unusedStorage2_V4Update_subnet, minimalDeposit, claimAdmin] = subnetData;
 
-      // Read metadata from contract at the event block
-      const metadata = await context.client.readContract({
-        address: event.log.address,
-        abi: context.contracts.BuildersV4.abi,
-        functionName: "subnetsMetadata",
-        args: [subnetId],
-        blockNumber: event.block.number, // Read at the event block, not current block
-      });
+      // Read metadata from contract at the event block (or latest as fallback)
+      let metadata;
+      try {
+        metadata = await context.client.readContract({
+          address: event.log.address,
+          abi: context.contracts.BuildersV4.abi,
+          functionName: "subnetsMetadata",
+          args: [subnetId],
+          blockNumber: event.block.number, // Read at the event block, not current block
+        });
+      } catch (blockError: any) {
+        // Fallback to latest block if historical read fails
+        console.warn(`Failed to read metadata at event block ${event.block.number}, trying latest block: ${blockError.message}`);
+        metadata = await context.client.readContract({
+          address: event.log.address,
+          abi: context.contracts.BuildersV4.abi,
+          functionName: "subnetsMetadata",
+          args: [subnetId],
+          // No blockNumber = latest block
+        });
+      }
 
       const [slug, description, website, image] = metadata;
 
@@ -434,47 +491,58 @@ ponder.on("BuildersV4:SubnetMetadataEdited", async ({ event, context }: any) => 
   if (!project) {
     const blockTimestamp = Number(event.block.timestamp);
     
-    // Read subnet data from contract
-    const subnetData = await context.client.readContract({
-      address: event.log.address,
-      abi: context.contracts.BuildersV4.abi,
-      functionName: "subnets",
-      args: [subnetId_],
-    });
-
-    const [name, admin, unusedStorage1_V4Update, withdrawLockPeriodAfterDeposit, unusedStorage2_V4Update, minimalDeposit, claimAdmin] = subnetData;
-
-    // Create the project
-    await context.db.insert(buildersProject).values({
-      id: subnetId_,
-      name: name,
-      admin: admin,
-      totalStaked: 0n,
-      totalUsers: 0,
-      totalClaimed: 0n,
-      minimalDeposit: minimalDeposit,
-      withdrawLockPeriodAfterDeposit: withdrawLockPeriodAfterDeposit,
-      claimLockEnd: BigInt(blockTimestamp) + BigInt(withdrawLockPeriodAfterDeposit),
-      startsAt: BigInt(blockTimestamp),
-      chainId: context.chain.id,
-      contractAddress: event.log.address,
-      createdAt: blockTimestamp,
-      createdAtBlock: event.block.number,
-      slug: slug || null,
-      description: description || null,
-      website: website || null,
-      image: image || null,
-    });
-
-    // Update counters
-    const counter = await getOrCreateCounters(context, blockTimestamp);
-    await context.db
-      .update(counters, { id: "global" })
-      .set({
-        totalBuildersProjects: counter.totalBuildersProjects + 1,
-        totalSubnets: counter.totalSubnets + 1,
-        lastUpdated: blockTimestamp,
+    // Read subnet data from contract at the event block
+    // If the subnet doesn't exist in the contract (reverts), skip this event
+    try {
+      const subnetData = await context.client.readContract({
+        address: event.log.address,
+        abi: context.contracts.BuildersV4.abi,
+        functionName: "subnets",
+        args: [subnetId_],
+        blockNumber: event.block.number, // Read at the event block, not current block
       });
+
+      const [name, admin, unusedStorage1_V4Update, withdrawLockPeriodAfterDeposit, unusedStorage2_V4Update, minimalDeposit, claimAdmin] = subnetData;
+
+      // Create the project
+      await context.db.insert(buildersProject).values({
+        id: subnetId_,
+        name: name,
+        admin: admin,
+        totalStaked: 0n,
+        totalUsers: 0,
+        totalClaimed: 0n,
+        minimalDeposit: minimalDeposit,
+        withdrawLockPeriodAfterDeposit: withdrawLockPeriodAfterDeposit,
+        claimLockEnd: BigInt(blockTimestamp) + BigInt(withdrawLockPeriodAfterDeposit),
+        startsAt: BigInt(blockTimestamp),
+        chainId: context.chain.id,
+        contractAddress: event.log.address,
+        createdAt: blockTimestamp,
+        createdAtBlock: event.block.number,
+        slug: slug || null,
+        description: description || null,
+        website: website || null,
+        image: image || null,
+      });
+
+      // Update counters
+      const counter = await getOrCreateCounters(context, blockTimestamp);
+      await context.db
+        .update(counters, { id: "global" })
+        .set({
+          totalBuildersProjects: counter.totalBuildersProjects + 1,
+          totalSubnets: counter.totalSubnets + 1,
+          lastUpdated: blockTimestamp,
+        });
+    } catch (error: any) {
+      // If contract call reverts (subnet doesn't exist), skip this event
+      // This can happen if the subnet was deleted or the event is invalid
+      console.warn(`Skipping SubnetMetadataEdited event: subnet ${subnetId_} does not exist in contract at block ${event.block.number}`);
+      console.warn(`  Transaction: ${event.transaction.hash}, Block: ${event.block.number}`);
+      console.warn(`  Note: This subnet may have been deleted or never existed. Check for SubnetCreated events for subnetId: ${subnetId_}`);
+      return; // Skip processing this event
+    }
   } else {
     // Update project metadata
     await context.db
