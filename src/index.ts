@@ -141,10 +141,69 @@ ponder.on("BuildersV4:UserDeposited", async ({ event, context }: any) => {
   // Check if user already exists
   const existingUser = await context.db.find(buildersUser, { id: userId });
   
-  // Get current project totals
-  const project = await context.db.find(buildersProject, { id: subnetId });
+  // Get current project totals - create project if it doesn't exist
+  // This can happen if UserDeposited is processed before SubnetCreated during historical sync
+  let project = await context.db.find(buildersProject, { id: subnetId });
+  
   if (!project) {
-    throw new Error(`Project ${subnetId} not found`);
+    // Project doesn't exist, create it by reading from contract
+    // Read subnet data from contract
+    const subnetData = await context.client.readContract({
+      address: event.log.address,
+      abi: context.contracts.BuildersV4.abi,
+      functionName: "subnets",
+      args: [subnetId],
+    });
+
+    const [name, admin, unusedStorage1_V4Update_subnet, withdrawLockPeriodAfterDeposit, unusedStorage2_V4Update_subnet, minimalDeposit, claimAdmin] = subnetData;
+
+    // Read metadata from contract
+    const metadata = await context.client.readContract({
+      address: event.log.address,
+      abi: context.contracts.BuildersV4.abi,
+      functionName: "subnetsMetadata",
+      args: [subnetId],
+    });
+
+    const [slug, description, website, image] = metadata;
+
+    // Create the project
+    await context.db.insert(buildersProject).values({
+      id: subnetId,
+      name: name,
+      admin: admin,
+      totalStaked: 0n,
+      totalUsers: 0,
+      totalClaimed: 0n,
+      minimalDeposit: minimalDeposit,
+      withdrawLockPeriodAfterDeposit: withdrawLockPeriodAfterDeposit,
+      claimLockEnd: BigInt(blockTimestamp) + BigInt(withdrawLockPeriodAfterDeposit),
+      startsAt: BigInt(blockTimestamp),
+      chainId: context.chain.id,
+      contractAddress: event.log.address,
+      createdAt: blockTimestamp,
+      createdAtBlock: event.block.number,
+      slug: slug || null,
+      description: description || null,
+      website: website || null,
+      image: image || null,
+    });
+
+    // Update counters
+    const counter = await getOrCreateCounters(context, blockTimestamp);
+    await context.db
+      .update(counters, { id: "global" })
+      .set({
+        totalBuildersProjects: counter.totalBuildersProjects + 1,
+        totalSubnets: counter.totalSubnets + 1,
+        lastUpdated: blockTimestamp,
+      });
+
+    // Re-fetch the project we just created
+    project = await context.db.find(buildersProject, { id: subnetId });
+    if (!project) {
+      throw new Error(`Failed to create project ${subnetId}`);
+    }
   }
 
   // Calculate incremental changes
@@ -222,10 +281,71 @@ ponder.on("BuildersV4:UserWithdrawn", async ({ event, context }: any) => {
 
   // Get current user and project records
   const existingUser = await context.db.find(buildersUser, { id: userId });
-  const project = await context.db.find(buildersProject, { id: subnetId });
+  let project = await context.db.find(buildersProject, { id: subnetId });
   
-  if (!existingUser || !project) {
-    throw new Error(`User ${userId} or project ${subnetId} not found`);
+  // Create project if it doesn't exist (can happen during historical sync)
+  if (!project) {
+    // Read subnet data from contract
+    const subnetData = await context.client.readContract({
+      address: event.log.address,
+      abi: context.contracts.BuildersV4.abi,
+      functionName: "subnets",
+      args: [subnetId],
+    });
+
+    const [name, admin, unusedStorage1_V4Update_subnet, withdrawLockPeriodAfterDeposit, unusedStorage2_V4Update_subnet, minimalDeposit, claimAdmin] = subnetData;
+
+    // Read metadata from contract
+    const metadata = await context.client.readContract({
+      address: event.log.address,
+      abi: context.contracts.BuildersV4.abi,
+      functionName: "subnetsMetadata",
+      args: [subnetId],
+    });
+
+    const [slug, description, website, image] = metadata;
+
+    // Create the project
+    await context.db.insert(buildersProject).values({
+      id: subnetId,
+      name: name,
+      admin: admin,
+      totalStaked: 0n,
+      totalUsers: 0,
+      totalClaimed: 0n,
+      minimalDeposit: minimalDeposit,
+      withdrawLockPeriodAfterDeposit: withdrawLockPeriodAfterDeposit,
+      claimLockEnd: BigInt(blockTimestamp) + BigInt(withdrawLockPeriodAfterDeposit),
+      startsAt: BigInt(blockTimestamp),
+      chainId: context.chain.id,
+      contractAddress: event.log.address,
+      createdAt: blockTimestamp,
+      createdAtBlock: event.block.number,
+      slug: slug || null,
+      description: description || null,
+      website: website || null,
+      image: image || null,
+    });
+
+    // Update counters
+    const counter = await getOrCreateCounters(context, blockTimestamp);
+    await context.db
+      .update(counters, { id: "global" })
+      .set({
+        totalBuildersProjects: counter.totalBuildersProjects + 1,
+        totalSubnets: counter.totalSubnets + 1,
+        lastUpdated: blockTimestamp,
+      });
+
+    // Re-fetch the project we just created
+    project = await context.db.find(buildersProject, { id: subnetId });
+    if (!project) {
+      throw new Error(`Failed to create project ${subnetId}`);
+    }
+  }
+  
+  if (!existingUser) {
+    throw new Error(`User ${userId} not found`);
   }
 
   // Calculate incremental change
