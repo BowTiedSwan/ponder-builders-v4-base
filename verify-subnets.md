@@ -37,14 +37,52 @@ ORDER BY "createdAtBlock" DESC;
 
 ### Method 3: Check Contract State at Specific Block
 
-Use a tool like BaseScan's "Read Contract" feature:
+**Note:** BaseScan's "Read Contract" interface reads at the **latest block** by default. To read at a specific historical block, you need to use the API or a tool like viem.
+
+#### Option A: Using BaseScan API (for specific block)
+
+Use BaseScan's API to read contract state at a specific block:
+
+```bash
+# Replace YOUR_API_KEY with your BaseScan API key
+# Replace BLOCK_NUMBER with the block number (e.g., 29019882)
+
+curl "https://api.basescan.org/api?module=proxy&action=eth_call&to=0x42bb446eae6dca7723a9ebdb81ea88afe77ef4b9&data=0x02e30f9a0c8d5f4c48826aeecff5b2defb4314351a3ca7f93f7b41d8bb99c47e3aae1360&tag=0x[BLOCK_NUMBER_HEX]&apikey=YOUR_API_KEY"
+```
+
+Where:
+- `0x02e30f9a` is the function selector for `subnets(bytes32)`
+- `0x0c8d5f4c...` is the subnet ID (padded to 32 bytes)
+- `0x[BLOCK_NUMBER_HEX]` is the block number in hex (e.g., `0x1baa4ea` for block 29019882)
+
+#### Option B: Using BaseScan Web Interface (latest block only)
+
 1. Go to: https://basescan.org/address/0x42bb446eae6dca7723a9ebdb81ea88afe77ef4b9#readContract
-2. Find the `subnets(bytes32)` function
+2. Find the `subnets(bytes32)` function (it's function #19)
 3. Enter the subnet ID: `0x0c8d5f4c48826aeecff5b2defb4314351a3ca7f93f7b41d8bb99c47e3aae1360`
-4. Try reading at different block numbers:
-   - At the block where UserDeposited occurred (29019882)
-   - At the current block
-   - At blocks before/after
+4. Click "Query"
+5. **Note:** This reads at the **latest block**, not historical blocks
+
+#### Option C: Using viem/ethers.js (for programmatic checks)
+
+```typescript
+import { createPublicClient, http } from 'viem';
+import { base } from 'viem/chains';
+
+const client = createPublicClient({
+  chain: base,
+  transport: http('https://mainnet.base.org'),
+});
+
+// Read at specific block
+const subnetData = await client.readContract({
+  address: '0x42bb446eae6dca7723a9ebdb81ea88afe77ef4b9',
+  abi: BuildersV4Abi,
+  functionName: 'subnets',
+  args: ['0x0c8d5f4c48826aeecff5b2defb4314351a3ca7f93f7b41d8bb99c47e3aae1360'],
+  blockNumber: 29019882n, // Read at the event block
+});
+```
 
 ### Method 4: GraphQL Query
 
