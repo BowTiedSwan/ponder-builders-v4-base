@@ -100,10 +100,8 @@ export default createConfig({
     MorToken: {
       abi: ERC20Abi,
       chain: "base",
-      // TODO: Update with actual MOR token address on Base Mainnet
       address: (process.env.MOR_TOKEN_ADDRESS_BASE_MAINNET || "0x7431ADA8A591C955A994A21710752ef9b882b8e3") as `0x${string}`,
-      // TODO: Update with actual deployment block number
-      startBlock: Number(process.env.MOR_TOKEN_START_BLOCK_BASE_MAINNET || "24869176"),
+      startBlock: Number(process.env.MOR_TOKEN_START_BLOCK_BASE_MAINNET || "32523983"),
     },
   },
 });
