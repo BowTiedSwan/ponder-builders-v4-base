@@ -134,10 +134,10 @@ ponder.on("BuildersV4:UserDeposited", async ({ event, context }: any) => {
   let userData;
   try {
     userData = await context.client.readContract({
-      address: event.log.address,
-      abi: context.contracts.BuildersV4.abi,
-      functionName: "usersData",
-      args: [user, subnetId],
+    address: event.log.address,
+    abi: context.contracts.BuildersV4.abi,
+    functionName: "usersData",
+    args: [user, subnetId],
       blockNumber: event.block.number, // Read at the event block, not current block
     });
   } catch (error: any) {
@@ -329,10 +329,10 @@ ponder.on("BuildersV4:UserWithdrawn", async ({ event, context }: any) => {
   let userData;
   try {
     userData = await context.client.readContract({
-      address: event.log.address,
-      abi: context.contracts.BuildersV4.abi,
-      functionName: "usersData",
-      args: [user, subnetId],
+    address: event.log.address,
+    abi: context.contracts.BuildersV4.abi,
+    functionName: "usersData",
+    args: [user, subnetId],
       blockNumber: event.block.number, // Read at the event block, not current block
     });
   } catch (error: any) {
@@ -452,11 +452,34 @@ ponder.on("BuildersV4:UserWithdrawn", async ({ event, context }: any) => {
     }
   }
   
+  // Create user if they don't exist
+  // This can happen if their first deposit was before our startBlock or was skipped
   if (!existingUser) {
-    throw new Error(`User ${userId} not found`);
-  }
+    console.warn(`User ${userId} not found, creating from contract state at block ${event.block.number}`);
+    
+    // Create the user record with current contract state
+    await context.db.insert(buildersUser).values({
+      id: userId,
+      buildersProjectId: subnetId,
+      address: user,
+      staked: deposited,
+      claimed: 0n, // We don't have historical claimed data, start at 0
+      lastStake: BigInt(blockTimestamp),
+      claimLockEnd: BigInt(lastDeposit),
+      lastDeposit: lastDeposit,
+      virtualDeposited: unusedStorage2_V4Update,
+      chainId: context.chain.id,
+    });
 
-  // Calculate incremental change
+    // Update project totals - add the full staked amount since this is a new user
+    await context.db
+      .update(buildersProject, { id: subnetId })
+      .set({
+        totalStaked: project.totalStaked + deposited,
+        totalUsers: project.totalUsers + 1,
+      });
+  } else {
+    // User exists, calculate incremental change
   const oldStaked = existingUser.staked;
   const stakedDelta = deposited - oldStaked;
 
@@ -475,6 +498,7 @@ ponder.on("BuildersV4:UserWithdrawn", async ({ event, context }: any) => {
     .set({
       totalStaked: project.totalStaked + stakedDelta,
     });
+  }
 });
 
 // Subnet Metadata Updates
@@ -494,47 +518,47 @@ ponder.on("BuildersV4:SubnetMetadataEdited", async ({ event, context }: any) => 
     // Read subnet data from contract at the event block
     // If the subnet doesn't exist in the contract (reverts), skip this event
     try {
-      const subnetData = await context.client.readContract({
-        address: event.log.address,
-        abi: context.contracts.BuildersV4.abi,
-        functionName: "subnets",
-        args: [subnetId_],
+    const subnetData = await context.client.readContract({
+      address: event.log.address,
+      abi: context.contracts.BuildersV4.abi,
+      functionName: "subnets",
+      args: [subnetId_],
         blockNumber: event.block.number, // Read at the event block, not current block
+    });
+
+    const [name, admin, unusedStorage1_V4Update, withdrawLockPeriodAfterDeposit, unusedStorage2_V4Update, minimalDeposit, claimAdmin] = subnetData;
+
+    // Create the project
+    await context.db.insert(buildersProject).values({
+      id: subnetId_,
+      name: name,
+      admin: admin,
+      totalStaked: 0n,
+      totalUsers: 0,
+      totalClaimed: 0n,
+      minimalDeposit: minimalDeposit,
+      withdrawLockPeriodAfterDeposit: withdrawLockPeriodAfterDeposit,
+      claimLockEnd: BigInt(blockTimestamp) + BigInt(withdrawLockPeriodAfterDeposit),
+      startsAt: BigInt(blockTimestamp),
+      chainId: context.chain.id,
+      contractAddress: event.log.address,
+      createdAt: blockTimestamp,
+      createdAtBlock: event.block.number,
+      slug: slug || null,
+      description: description || null,
+      website: website || null,
+      image: image || null,
+    });
+
+    // Update counters
+    const counter = await getOrCreateCounters(context, blockTimestamp);
+    await context.db
+      .update(counters, { id: "global" })
+      .set({
+        totalBuildersProjects: counter.totalBuildersProjects + 1,
+        totalSubnets: counter.totalSubnets + 1,
+        lastUpdated: blockTimestamp,
       });
-
-      const [name, admin, unusedStorage1_V4Update, withdrawLockPeriodAfterDeposit, unusedStorage2_V4Update, minimalDeposit, claimAdmin] = subnetData;
-
-      // Create the project
-      await context.db.insert(buildersProject).values({
-        id: subnetId_,
-        name: name,
-        admin: admin,
-        totalStaked: 0n,
-        totalUsers: 0,
-        totalClaimed: 0n,
-        minimalDeposit: minimalDeposit,
-        withdrawLockPeriodAfterDeposit: withdrawLockPeriodAfterDeposit,
-        claimLockEnd: BigInt(blockTimestamp) + BigInt(withdrawLockPeriodAfterDeposit),
-        startsAt: BigInt(blockTimestamp),
-        chainId: context.chain.id,
-        contractAddress: event.log.address,
-        createdAt: blockTimestamp,
-        createdAtBlock: event.block.number,
-        slug: slug || null,
-        description: description || null,
-        website: website || null,
-        image: image || null,
-      });
-
-      // Update counters
-      const counter = await getOrCreateCounters(context, blockTimestamp);
-      await context.db
-        .update(counters, { id: "global" })
-        .set({
-          totalBuildersProjects: counter.totalBuildersProjects + 1,
-          totalSubnets: counter.totalSubnets + 1,
-          lastUpdated: blockTimestamp,
-        });
     } catch (error: any) {
       // If contract call reverts (subnet doesn't exist), skip this event
       // This can happen if the subnet was deleted or the event is invalid
