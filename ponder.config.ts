@@ -55,13 +55,34 @@ export default createConfig({
     base: {
       id: 8453,
       rpc: loadBalance([
+        // Primary: Base official public RPC (free, no auth required)
         rateLimit(
-          http(process.env.PONDER_RPC_URL_8453 || "https://mainnet.base.org"),
-          { requestsPerSecond: 15 }
+          http("https://mainnet.base.org"),
+          { requestsPerSecond: 10 }
         ),
-        rateLimit(http("https://base-rpc.publicnode.com"), { 
-          requestsPerSecond: 10 
-        }),
+        // Secondary: PublicNode (free, reliable)
+        rateLimit(
+          http("https://base-rpc.publicnode.com"),
+          { requestsPerSecond: 10 }
+        ),
+        // Tertiary: Ankr public RPC (free, good uptime)
+        rateLimit(
+          http("https://rpc.ankr.com/base"),
+          { requestsPerSecond: 10 }
+        ),
+        // Quaternary: Base Pokt Network (free)
+        rateLimit(
+          http("https://base-pokt.nodies.app"),
+          { requestsPerSecond: 8 }
+        ),
+        // Last fallback: Alchemy (if PONDER_RPC_URL_8453 is set, but rate limited)
+        // Only used if all other endpoints fail or are overloaded
+        ...(process.env.PONDER_RPC_URL_8453 ? [
+          rateLimit(
+            http(process.env.PONDER_RPC_URL_8453),
+            { requestsPerSecond: 5 } // Conservative limit due to monthly cap
+          )
+        ] : []),
       ]),
     },
   },
