@@ -197,7 +197,7 @@ query GetProjectsForUser($userAddress: String!) {
         chainId
         contractAddress
         createdAt
-        users(
+        builderUsers(
           orderBy: "staked"
           orderDirection: "desc"
           limit: 100

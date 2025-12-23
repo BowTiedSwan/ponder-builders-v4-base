@@ -149,3 +149,4 @@ With proper RPC configuration:
 3. 🔄 Restart deployment to apply changes
 4. 📊 Monitor logs to verify successful RPC failover
 5. ✅ Confirm indexing progresses without 429 errors
+

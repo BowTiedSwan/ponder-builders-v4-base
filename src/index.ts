@@ -40,7 +40,7 @@ ponder.on("BuildersV4:SubnetCreated", async ({ event, context }: any) => {
   const { subnetId, subnet } = event.args;
   
   // subnet is a tuple with: name, admin, unusedStorage1_V4Update, withdrawLockPeriodAfterDeposit, unusedStorage2_V4Update, minimalDeposit, claimAdmin
-  const { name, admin, withdrawLockPeriodAfterDeposit, minimalDeposit } = subnet;
+  const { name, admin, withdrawLockPeriodAfterDeposit, minimalDeposit, claimAdmin } = subnet;
 
   // Check if project already exists (can happen if SubnetMetadataEdited was processed first)
   let existingProject = await context.db.find(buildersProject, { id: subnetId });
@@ -64,8 +64,9 @@ ponder.on("BuildersV4:SubnetCreated", async ({ event, context }: any) => {
       id: subnetId,
       name: name,
       admin: admin,
+      claimAdmin: claimAdmin,
       totalStaked: 0n,
-      totalUsers: 0,
+      totalUsers: 0n,
       totalClaimed: 0n,
       minimalDeposit: minimalDeposit,
       withdrawLockPeriodAfterDeposit: withdrawLockPeriodAfterDeposit,
@@ -75,10 +76,10 @@ ponder.on("BuildersV4:SubnetCreated", async ({ event, context }: any) => {
       contractAddress: event.log.address,
       createdAt: blockTimestamp,
       createdAtBlock: event.block.number,
-      slug: slug || null,
-      description: description || null,
-      website: website || null,
-      image: image || null,
+      slug: slug || "",
+      description: description || "",
+      website: website || "",
+      image: image || "",
     });
 
     // Update counters
@@ -97,14 +98,15 @@ ponder.on("BuildersV4:SubnetCreated", async ({ event, context }: any) => {
       .set({
         name: name,
         admin: admin,
+        claimAdmin: claimAdmin,
         minimalDeposit: minimalDeposit,
         withdrawLockPeriodAfterDeposit: withdrawLockPeriodAfterDeposit,
         claimLockEnd: BigInt(blockTimestamp) + BigInt(withdrawLockPeriodAfterDeposit),
         startsAt: BigInt(blockTimestamp),
-        slug: slug || existingProject.slug,
-        description: description || existingProject.description,
-        website: website || existingProject.website,
-        image: image || existingProject.image,
+        slug: slug || existingProject.slug || "",
+        description: description || existingProject.description || "",
+        website: website || existingProject.website || "",
+        image: image || existingProject.image || "",
       });
   }
 });
@@ -227,10 +229,10 @@ ponder.on("BuildersV4:UserDeposited", async ({ event, context }: any) => {
         contractAddress: event.log.address,
         createdAt: blockTimestamp,
         createdAtBlock: event.block.number,
-        slug: slug || null,
-        description: description || null,
-        website: website || null,
-        image: image || null,
+        slug: slug || "",
+        description: description || "",
+        website: website || "",
+        image: image || "",
       });
 
       // Update counters
@@ -299,7 +301,7 @@ ponder.on("BuildersV4:UserDeposited", async ({ event, context }: any) => {
     .update(buildersProject, { id: subnetId })
     .set({
       totalStaked: project.totalStaked + stakedDelta,
-      totalUsers: isNewUser ? project.totalUsers + 1 : project.totalUsers,
+      totalUsers: isNewUser ? project.totalUsers + 1n : project.totalUsers,
     });
 });
 
@@ -408,8 +410,9 @@ ponder.on("BuildersV4:UserWithdrawn", async ({ event, context }: any) => {
         id: subnetId,
         name: name,
         admin: admin,
+        claimAdmin: claimAdmin,
         totalStaked: 0n,
-        totalUsers: 0,
+        totalUsers: 0n,
         totalClaimed: 0n,
         minimalDeposit: minimalDeposit,
         withdrawLockPeriodAfterDeposit: withdrawLockPeriodAfterDeposit,
@@ -419,10 +422,10 @@ ponder.on("BuildersV4:UserWithdrawn", async ({ event, context }: any) => {
         contractAddress: event.log.address,
         createdAt: blockTimestamp,
         createdAtBlock: event.block.number,
-        slug: slug || null,
-        description: description || null,
-        website: website || null,
-        image: image || null,
+        slug: slug || "",
+        description: description || "",
+        website: website || "",
+        image: image || "",
       });
 
       // Update counters
@@ -475,7 +478,7 @@ ponder.on("BuildersV4:UserWithdrawn", async ({ event, context }: any) => {
       .update(buildersProject, { id: subnetId })
       .set({
         totalStaked: project.totalStaked + deposited,
-        totalUsers: project.totalUsers + 1,
+        totalUsers: project.totalUsers + 1n,
       });
   } else {
     // User exists, calculate incremental change
@@ -532,8 +535,9 @@ ponder.on("BuildersV4:SubnetMetadataEdited", async ({ event, context }: any) => 
       id: subnetId_,
       name: name,
       admin: admin,
+      claimAdmin: claimAdmin,
       totalStaked: 0n,
-      totalUsers: 0,
+      totalUsers: 0n,
       totalClaimed: 0n,
       minimalDeposit: minimalDeposit,
       withdrawLockPeriodAfterDeposit: withdrawLockPeriodAfterDeposit,
@@ -543,10 +547,10 @@ ponder.on("BuildersV4:SubnetMetadataEdited", async ({ event, context }: any) => 
       contractAddress: event.log.address,
       createdAt: blockTimestamp,
       createdAtBlock: event.block.number,
-      slug: slug || null,
-      description: description || null,
-      website: website || null,
-      image: image || null,
+      slug: slug || "",
+      description: description || "",
+      website: website || "",
+      image: image || "",
     });
 
     // Update counters
@@ -571,10 +575,10 @@ ponder.on("BuildersV4:SubnetMetadataEdited", async ({ event, context }: any) => 
     await context.db
       .update(buildersProject, { id: subnetId_ })
       .set({
-        slug: slug || null,
-        description: description || null,
-        website: website || null,
-        image: image || null,
+        slug: slug || project.slug || "",
+        description: description || project.description || "",
+        website: website || project.website || "",
+        image: image || project.image || "",
       });
   }
 });

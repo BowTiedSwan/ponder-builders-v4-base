@@ -5,8 +5,9 @@ export const buildersProject = onchainTable("builders_project", (t) => ({
   id: t.hex().primaryKey(), // builderPoolId (bytes32)
   name: t.text().notNull(),
   admin: t.hex().notNull(), // Administrator address
+  claimAdmin: t.hex().notNull(), // Claim administrator address
   totalStaked: t.bigint().notNull().default(0n),
-  totalUsers: t.integer().notNull().default(0),
+  totalUsers: t.bigint().notNull().default(0n), // Changed from integer to bigint to match Goldsky schema
   totalClaimed: t.bigint().notNull().default(0n),
   minimalDeposit: t.bigint().notNull(),
   withdrawLockPeriodAfterDeposit: t.bigint().notNull(), // Lock period in seconds
@@ -16,11 +17,11 @@ export const buildersProject = onchainTable("builders_project", (t) => ({
   contractAddress: t.hex().notNull(), // Builders contract address
   createdAt: t.integer().notNull(), // Block timestamp when created
   createdAtBlock: t.bigint().notNull(), // Block number when created
-  // Metadata fields
-  slug: t.text(), // Subnet slug/identifier
-  description: t.text(), // Subnet description
-  website: t.text(), // Subnet website URL
-  image: t.text(), // Subnet image URL
+  // Metadata fields - changed to non-nullable to match Goldsky schema
+  slug: t.text().notNull(), // Subnet slug/identifier
+  description: t.text().notNull(), // Subnet description
+  website: t.text().notNull(), // Subnet website URL
+  image: t.text().notNull(), // Subnet image URL
 }));
 
 // Builders users table - matches GraphQL BuildersUser entity
@@ -106,7 +107,7 @@ export const counters = onchainTable("counters", (t) => ({
 // Note: Ponder doesn't support foreign key constraints at the database level
 // Relations are defined for GraphQL API purposes only
 export const buildersProjectRelations = relations(buildersProject, ({ many }) => ({
-  users: many(buildersUser),
+  builderUsers: many(buildersUser), // Changed from 'users' to 'builderUsers' to match Goldsky schema
   events: many(stakingEvent),
 }));
 
